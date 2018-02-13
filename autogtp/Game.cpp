@@ -19,6 +19,7 @@
 #include <QUuid>
 #include <QFile>
 #include <QTextStream>
+#include <unistd.h>
 #include <QRegularExpression>
 #include "Game.h"
 
@@ -221,7 +222,17 @@ bool Game::waitReady() {
     return true;
 }
 
+static int curMove = 1;
+
 bool Game::readMove() {
+    QTextStream(stdout) << m_seed << " " << m_moveNum << " (";
+    QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << QStringLiteral("B") << curMove++ << ") ";
+    QTextStream(stdout).flush();
+
+    sleep(1);
+
+    return true;
+
     char readBuffer[256];
     int readCount = readLine(readBuffer, 256);
     if (readCount <= 3 || readBuffer[0] != '=') {
