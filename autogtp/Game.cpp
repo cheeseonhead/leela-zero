@@ -23,7 +23,7 @@
 #include "Game.h"
 
 QString extractSeedFromOpt(const QString& opt) {
-  QRegularExpression re(".* -s [0-9]+ .*");
+  QRegularExpression re(".* -s ([0-9]+) .*");
   QRegularExpressionMatch match = re.match(opt);
 
   return match.captured(0);
