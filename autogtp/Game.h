@@ -55,6 +55,7 @@ public:
     int getMovesCount() const { return m_moveNum; }
     void setMovesCount(int moves);
     QString getResult() const { return m_result.trimmed(); }
+    QString getSeed() const { return m_seed; }
     enum {
         BLACK = 0,
         WHITE = 1,
