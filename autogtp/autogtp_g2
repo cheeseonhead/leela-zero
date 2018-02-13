@@ -1,0 +1,3 @@
+#! bin/bash
+
+./autogtp -g 2
