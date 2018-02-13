@@ -22,6 +22,13 @@
 #include <QRegularExpression>
 #include "Game.h"
 
+QString extractSeedFromOpt(const QString& opt) {
+  QRegularExpression re(".* -s [0-9]+ .*");
+  QRegularExpressionMatch match = re.match(opt);
+
+  return match.captured(1);
+}
+
 Game::Game(const QString& weights, const QString& opt, const QString& binary) :
     QProcess(),
     m_cmdLine(""),
@@ -36,6 +43,11 @@ Game::Game(const QString& weights, const QString& opt, const QString& binary) :
 #ifdef WIN32
     m_binary.append(".exe");
 #endif
+
+    m_seed = extractSeedFromOpt(opt);
+    QTextStream(stdout) << m_seed;
+    QTextStream(stdout).flush();
+
     m_cmdLine = m_binary + " " + opt + " " + weights;
     m_fileName = QUuid::createUuid().toRfc4122().toHex();
 }

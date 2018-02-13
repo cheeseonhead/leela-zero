@@ -68,6 +68,7 @@ private:
         LAUNCH_FAILURE
     };
     QString m_cmdLine;
+    QString m_seed;
     QString m_binary;
     QString m_timeSettings;
     QString m_winner;
