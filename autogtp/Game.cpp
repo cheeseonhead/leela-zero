@@ -23,10 +23,10 @@
 #include "Game.h"
 
 QString extractSeedFromOpt(const QString& opt) {
-  QRegularExpression re(".* -s ([0-9]+) .*");
+  QRegularExpression re("-s (?<seed>[0-9]+)");
   QRegularExpressionMatch match = re.match(opt);
 
-  return match.captured(0);
+  return match.captured("seed");
 }
 
 Game::Game(const QString& weights, const QString& opt, const QString& binary) :
@@ -44,9 +44,10 @@ Game::Game(const QString& weights, const QString& opt, const QString& binary) :
     m_binary.append(".exe");
 #endif
 
+    // QTextStream(stdout) << "OPT:" << opt << "\n";
     m_seed = extractSeedFromOpt(opt);
-    QTextStream(stdout) << m_seed;
-    QTextStream(stdout).flush();
+    // QTextStream(stdout) << "SEED:" << m_seed << "\n";
+    // QTextStream(stdout).flush();
 
     m_cmdLine = m_binary + " " + opt + " " + weights;
     m_fileName = QUuid::createUuid().toRfc4122().toHex();
@@ -241,7 +242,7 @@ bool Game::readMove() {
     if(readCount == 0) {
         error(Game::WRONG_GTP);
     }
-    QTextStream(stdout) << m_moveNum << " (";
+    QTextStream(stdout) << m_seed << " " << m_moveNum << " (";
     QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << m_moveDone << ") ";
     QTextStream(stdout).flush();
     if (m_moveDone.compare(QStringLiteral("pass"),
