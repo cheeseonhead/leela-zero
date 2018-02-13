@@ -88,7 +88,7 @@ Result ProductionJob::execute(){
     } while (game.nextMove() && m_state.load() == RUNNING);
     switch(m_state.load()) {
     case RUNNING:
-        QTextStream(stdout) << "Game has ended." << endl;
+        QTextStream(stdout) << game.getSeed() << " Game has ended." << endl;
         if (game.getScore()) {
             game.writeSgf();
             game.fixSgf(m_network, false);
@@ -176,7 +176,7 @@ Result ValidationJob::execute(){
     switch(m_state.load()) {
     case RUNNING:
         res.add("moves", QString::number(first.getMovesCount()));
-       QTextStream(stdout) << game.getSeed() << " Game has ended." << endl;
+       QTextStream(stdout) << "Game has ended." << endl;
         if (first.getScore()) {
             res.add("score", first.getResult());
             res.add("winner", first.getWinnerName());
