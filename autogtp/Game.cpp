@@ -225,13 +225,13 @@ bool Game::waitReady() {
 static int curMove = 1;
 
 bool Game::readMove() {
-    QTextStream(stdout) << m_seed << " " << m_moveNum << " (";
-    QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << QStringLiteral("B") << curMove++ << ") ";
-    QTextStream(stdout).flush();
-
-    sleep(1);
-
-    return true;
+    // QTextStream(stdout) << m_seed << " " << m_moveNum << " (";
+    // QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << QStringLiteral("B") << curMove++ << ")\n";
+    // QTextStream(stdout).flush();
+    //
+    // sleep(1);
+    //
+    // return true;
 
     char readBuffer[256];
     int readCount = readLine(readBuffer, 256);
@@ -254,7 +254,7 @@ bool Game::readMove() {
         error(Game::WRONG_GTP);
     }
     QTextStream(stdout) << m_seed << " " << m_moveNum << " (";
-    QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << m_moveDone << ") ";
+    QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << m_moveDone << ")\n";
     QTextStream(stdout).flush();
     if (m_moveDone.compare(QStringLiteral("pass"),
                           Qt::CaseInsensitive) == 0) {
