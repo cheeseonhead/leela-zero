@@ -253,8 +253,8 @@ bool Game::readMove() {
     if(readCount == 0) {
         error(Game::WRONG_GTP);
     }
-    QTextStream(stdout) << m_seed << " " << m_moveNum << " (";
-    QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << m_moveDone << ")\n";
+    QTextStream(stdout) << m_seed << " " << m_moveNum << " ("
+      << (m_blackToMove ? "B " : "W ") << m_moveDone << ")\n";
     QTextStream(stdout).flush();
     if (m_moveDone.compare(QStringLiteral("pass"),
                           Qt::CaseInsensitive) == 0) {
