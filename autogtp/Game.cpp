@@ -84,6 +84,7 @@ void Game::error(int errnum) {
                 << "Unexpected error." << endl;
             break;
     }
+    exit(1);
 }
 
 bool Game::eatNewLine() {
@@ -225,14 +226,6 @@ bool Game::waitReady() {
 static int curMove = 1;
 
 bool Game::readMove() {
-    // QTextStream(stdout) << m_seed << " " << m_moveNum << " (";
-    // QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << QStringLiteral("B") << curMove++ << ")\n";
-    // QTextStream(stdout).flush();
-    //
-    // sleep(1);
-    //
-    // return true;
-
     char readBuffer[256];
     int readCount = readLine(readBuffer, 256);
     if (readCount <= 3 || readBuffer[0] != '=') {
