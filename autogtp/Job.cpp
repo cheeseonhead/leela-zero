@@ -176,7 +176,7 @@ Result ValidationJob::execute(){
     switch(m_state.load()) {
     case RUNNING:
         res.add("moves", QString::number(first.getMovesCount()));
-       QTextStream(stdout) << "Game has ended." << endl;
+       QTextStream(stdout) << first.getSeed() << " Game has ended." << endl;
         if (first.getScore()) {
             res.add("score", first.getResult());
             res.add("winner", first.getWinnerName());
