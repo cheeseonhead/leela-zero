@@ -223,8 +223,6 @@ bool Game::waitReady() {
     return true;
 }
 
-static int curMove = 1;
-
 bool Game::readMove() {
     char readBuffer[256];
     int readCount = readLine(readBuffer, 256);
