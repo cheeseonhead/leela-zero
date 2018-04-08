@@ -192,6 +192,8 @@ bool Game::gameStart(const VersionTuple &min_version) {
     QTextStream(stdout) << "Engine has started." << endl;
     sendGtpCommand(m_timeSettings);
     QTextStream(stdout) << "Infinite thinking time set." << endl;
+
+
     return true;
 }
 
@@ -224,6 +226,7 @@ bool Game::waitReady() {
 }
 
 bool Game::readMove() {
+    // Get the move
     char readBuffer[256];
     int readCount = readLine(readBuffer, 256);
     if (readCount <= 3 || readBuffer[0] != '=') {
@@ -244,8 +247,35 @@ bool Game::readMove() {
     if(readCount == 0) {
         error(Game::WRONG_GTP);
     }
+
+    // Get the winrate
+    write(qPrintable("heatmap average\n"));
+    waitForBytesWritten(-1);
+    if (!waitReady()) {
+        error(Game::PROCESS_DIED);
+        return false;
+    }
+    readCount = readLine(readBuffer, 256);
+    if (readCount <= 0 || readBuffer[0] != '=') {
+        QTextStream(stdout) << "GTP: " << readBuffer << endl;
+        error(Game::WRONG_GTP);
+        return false;
+    }
+
+    QString winRate = readBuffer;
+    winRate.remove(0, 2);
+    winRate = winRate.simplified();
+    if (!eatNewLine()) {
+        error(Game::PROCESS_DIED);
+        return false;
+    }
+    if(readCount == 0) {
+        error(Game::WRONG_GTP);
+    }
+
     QTextStream(stdout) << m_seed << " " << m_moveNum << " ("
-      << (m_blackToMove ? "B " : "W ") << m_moveDone << ")\n";
+      << (m_blackToMove ? "B " : "W ") << m_moveDone << ") "
+      << winRate << endl;
     QTextStream(stdout).flush();
     if (m_moveDone.compare(QStringLiteral("pass"),
                           Qt::CaseInsensitive) == 0) {
