@@ -121,6 +121,23 @@ void UCTSearch::update_root() {
 #endif
 }
 
+float UCTSearch::get_min_psa_ratio() const {
+    const auto mem_full = m_nodes / static_cast<float>(MAX_TREE_SIZE);
+    // If we are halfway through our memory budget, start trimming
+    // moves with very low policy priors.
+    if (mem_full > 0.5f) {
+        // Memory is almost exhausted, trim more aggressively.
+        if (mem_full > 0.95f) {
+            return 0.01f;
+        } else {
+            return 0.001f;
+        }
+    }
+    else {
+        return 0.0f;
+    }
+}
+
 SearchResult UCTSearch::play_simulation(GameState & currstate,
                                         UCTNode* const node) {
     const auto color = currstate.get_to_move();
@@ -128,16 +145,16 @@ SearchResult UCTSearch::play_simulation(GameState & currstate,
 
     node->virtual_loss();
 
-    if (!node->has_children()) {
+    if (node->expandable()) {
         if (currstate.get_passes() >= 2) {
             auto score = currstate.final_score();
             result = SearchResult::from_score(score);
         } else if (m_nodes < MAX_TREE_SIZE) {
-            auto mem_full_pct = m_nodes / static_cast<float>(MAX_TREE_SIZE);
             float eval;
-            auto success =
-                node->create_children(m_nodes, currstate, eval, mem_full_pct);
-            if (success) {
+            const auto had_children = node->has_children();
+            const auto success =
+                node->create_children(m_nodes, currstate, eval, get_min_psa_ratio());
+            if (!had_children && success) {
                 result = SearchResult::from_eval(eval);
             }
         }
@@ -545,12 +562,17 @@ int UCTSearch::think(int color, passflag_t passflag) {
     // create a sorted list off legal moves (make sure we
     // play something legal and decent even in time trouble)
     float root_eval;
-    if (!m_root->has_children()) {
+    const auto had_children = m_root->has_children();
+    if (m_root->expandable()) {
         m_root->create_children(m_nodes, m_rootstate, root_eval);
-        m_root->update(root_eval);
-    } else {
-        root_eval = m_root->get_eval(color);
     }
+    if (had_children) {
+        root_eval = m_root->get_eval(color);
+    } else {
+        m_root->update(root_eval);
+        root_eval = (color == FastBoard::BLACK ? root_eval : 1.0f - root_eval);
+    }
+    myprintf("NN eval=%f\n", root_eval);
 
     // Now that the new root is installed, there are a lot of special
     // cases where root node assumes all childs are inflated.
@@ -562,9 +584,6 @@ int UCTSearch::think(int color, passflag_t passflag) {
         auto alpha = 0.03f * 361.0f / BOARD_SQUARES;
         m_root->dirichlet_noise(0.25f, alpha);
     }
-
-    myprintf("NN eval=%f\n",
-             (color == FastBoard::BLACK ? root_eval : 1.0f - root_eval));
 
     m_run = true;
     int cpus = cfg_num_threads;
@@ -666,6 +685,9 @@ void UCTSearch::ponder() {
     dump_stats(m_rootstate, *m_root);
 
     myprintf("\n%d visits, %d nodes\n\n", m_root->get_visits(), m_nodes.load());
+
+    // Copy the root state. Use to check for tree re-use in future calls.
+    m_last_rootstate = std::make_unique<GameState>(m_rootstate);
 }
 
 void UCTSearch::set_playout_limit(int playouts) {
