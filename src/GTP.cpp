@@ -525,12 +525,12 @@ bool GTP::execute(GameState & game, std::string xinput) {
         if (!cmdstream.fail()) {
             auto vec = Network::get_scored_moves(
                 &game, Network::Ensemble::DIRECT, rotation, true);
-            sprintf(winrate, "%f%%", vec.second * 100);
+            sprintf(winrate, "%f%%", vec.winrate * 100);
             Network::show_heatmap(&game, vec, false);
         } else {
             auto vec = Network::get_scored_moves(
                 &game, Network::Ensemble::DIRECT, 0, true);
-            sprintf(winrate, "%f%%", vec.second * 100);
+            sprintf(winrate, "%f%%", vec.winrate * 100);
             Network::show_heatmap(&game, vec, false);
         }
         gtp_printf(id, winrate);
