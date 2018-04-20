@@ -10,3 +10,5 @@ leelaz-model*
 leelaz_opencl_tuning
 .idea
 cmake-build-debug
+autogtp/games
+autogtp/networks
