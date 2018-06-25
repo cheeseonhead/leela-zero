@@ -1,6 +1,6 @@
 # This file is part of Leela Zero.
 # Copyright (C) 2017 Marco Calignano
-# Copyright (C) 2017 Gian-Carlo Pascutto
+# Copyright (C) 2017-2018 Gian-Carlo Pascutto and contributors
 # Leela Zero is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -119,7 +119,7 @@ if(Qt5Core_FOUND)
         build target for `autogtp` and `validation` is disabled.")
     endif()
 else()
-    message(WARNNING "Qt is not found, build for `autogtp` and `validation` is disabled")
+    message(WARNING "Qt is not found, build for `autogtp` and `validation` is disabled")
 endif()
 
 # Google Test below
@@ -135,3 +135,21 @@ target_link_libraries(tests ${BLAS_LIBRARIES})
 target_link_libraries(tests ${OpenCL_LIBRARIES})
 target_link_libraries(tests ${ZLIB_LIBRARIES})
 target_link_libraries(tests gtest_main ${CMAKE_THREAD_LIBS_INIT})
+
+include(GetGitRevisionDescription)
+git_describe(VERSION --tags)
+string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" MAJOR_VERSION "${VERSION}")
+string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" MINOR_VERSION "${VERSION}")
+
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_NAME "leelaz")
+SET(CPACK_DEBIAN_PACKAGE_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
+SET(CPACK_DEBIAN_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Gian-Carlo Pascutto https://github.com/gcp/leela-zero")
+SET(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Go engine with no human-provided knowledge, modeled after the AlphaGo Zero paper.")
+SET(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+SET(CPACK_DEBIAN_PACKAGE_SECTION "games")
+SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+SET(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${MAJOR_VERSION}.${MINOR_VERSION}")
+
+INCLUDE(CPack)

@@ -1,5 +1,6 @@
 /*
     This file is part of Leela Zero.
+    Copyright (C) 2017-2018 Gian-Carlo Pascutto and contributors
 
     Leela Zero is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,10 +31,11 @@
 #endif
 
 /*
- * BOARD_SIZE: Define size of the board to compile Leela with, must be an odd number due to winograd tiles
+ * BOARD_SIZE: Define size of the board to compile Leela with, must be an odd
+   number due to winograd tiles
  */
 #define BOARD_SIZE 19
-#define BOARD_SQUARES BOARD_SIZE*BOARD_SIZE
+#define BOARD_SQUARES (BOARD_SIZE*BOARD_SIZE)
 
 #if (BOARD_SIZE % 2 == 0)
 #error Code assumes odd board size, remove at your own risk!
@@ -79,7 +81,7 @@
 //#define USE_TUNER
 
 #define PROGRAM_NAME "Leela Zero"
-#define PROGRAM_VERSION "0.13"
+#define PROGRAM_VERSION "0.15"
 
 /*
  * OpenBLAS limitation: the default configuration on some Linuxes

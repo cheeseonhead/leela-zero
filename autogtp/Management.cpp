@@ -69,10 +69,18 @@ void Management::runTuningProcess(const QString &tuneCmdLine) {
     QProcess tuneProcess;
     tuneProcess.start(tuneCmdLine);
     tuneProcess.waitForStarted(-1);
-    while(tuneProcess.state() == QProcess::Running) {
+    while (tuneProcess.state() == QProcess::Running) {
         tuneProcess.waitForReadyRead(1000);
+        QByteArray text = tuneProcess.readAllStandardOutput();
+        int version_start = text.indexOf("Leela Zero ") + 11;
+        if (version_start > 10) {
+            int version_end = text.indexOf(" ", version_start);
+            m_leelaversion = QString(text.mid(version_start, version_end - version_start));
+        }
+        QTextStream(stdout) << text;
         QTextStream(stdout) << tuneProcess.readAllStandardError();
     }
+    QTextStream(stdout) << "Found Leela Version : " << m_leelaversion << endl;
     tuneProcess.waitForFinished(-1);
 }
 
@@ -124,7 +132,7 @@ void Management::giveAssignments() {
                     &Management::getResult,
                     Qt::DirectConnection);
             QFileInfo finfo = getNextStored();
-            if(!finfo.fileName().isEmpty()) {
+            if (!finfo.fileName().isEmpty()) {
                 m_gamesThreads[thread_index]->order(getWork(finfo));
             } else {
                 m_gamesThreads[thread_index]->order(getWork());
@@ -155,7 +163,7 @@ void Management::getResult(Order ord, Result res, int index, int duration) {
     }
     m_syncMutex.lock();
     m_gamesPlayed++;
-    switch(res.type()) {
+    switch (res.type()) {
     case Result::File:
         m_selfGames++,
         uploadData(res.parameters(), ord.parameters());
@@ -169,15 +177,15 @@ void Management::getResult(Order ord, Result res, int index, int duration) {
         break;
     }
     sendAllGames();
-    if(m_gamesLeft == 0) {
+    if (m_gamesLeft == 0) {
         m_gamesThreads[index]->doFinish();
-        if(m_threadsLeft > 1) {
+        if (m_threadsLeft > 1) {
             --m_threadsLeft;
         } else {
             sendQuit();
         }
     } else {
-        if(m_gamesLeft > 0) --m_gamesLeft;
+        if (m_gamesLeft > 0) --m_gamesLeft;
         QFileInfo finfo = getNextStored();
         if (!finfo.fileName().isEmpty()) {
             m_gamesThreads[index]->order(getWork(finfo));
@@ -194,7 +202,7 @@ QFileInfo Management::getNextStored() {
     while (!m_storedFiles.isEmpty()) {
         fi = m_storedFiles.takeFirst();
         m_lockFile = new QLockFile(fi.fileName()+".lock");
-        if(m_lockFile->tryLock(10) &&
+        if (m_lockFile->tryLock(10) &&
            fi.exists()) {
                 break;
         }
@@ -241,7 +249,7 @@ QString Management::getBoolOption(const QJsonObject &ob, const QString &key, con
             res.append(opt + " ");
         }
     } else {
-        if(defValue) {
+        if (defValue) {
             res.append(opt + " ");
         }
     }
@@ -316,6 +324,8 @@ Order Management::getWorkInternal(bool tuning) {
         prog_cmdline.append("0");
     } else {
         prog_cmdline.append(QString::number(AUTOGTP_VERSION));
+        if (!m_leelaversion.isEmpty())
+            prog_cmdline.append("/"+m_leelaversion);
     }
     QProcess curl;
     curl.start(prog_cmdline);
@@ -346,7 +356,7 @@ Order Management::getWorkInternal(bool tuning) {
     } else if (ob.contains("minimum_autogtp_version")) {
         required_version = ob.value("minimum_autogtp_version").toString().toInt();
     }
-    if(required_version > m_version) {
+    if (required_version > m_version) {
         QTextStream(stdout) << "Required client version: " << required_version << endl;
         QTextStream(stdout) << ' ' <<  endl;
         QTextStream(stdout)
@@ -559,11 +569,11 @@ void Management::archiveFiles(const QString &fileName) {
     }
     if (!m_debugPath.isEmpty()) {
         QFile d(fileName + ".txt.0.gz");
-        if(d.exists()) {
+        if (d.exists()) {
             d.copy(m_debugPath + '/' + fileName + ".txt.0.gz");
         }
         QFile db(fileName + ".debug.txt.0.gz");
-        if(db.exists()) {
+        if (db.exists()) {
             db.copy(m_debugPath + '/' + fileName + ".debug.txt.0.gz");
         }
     }
@@ -621,7 +631,7 @@ void Management::sendAllGames() {
         if (!lf.tryLock(10)) {
             continue;
         }
-        QFile file (fileInfo.fileName());
+        QFile file(fileInfo.fileName());
         if (!file.open(QFile::ReadOnly)) {
             continue;
         }

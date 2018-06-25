@@ -22,7 +22,6 @@
 #include "config.h"
 
 #include <array>
-#include <bitset>
 #include <memory>
 #include <string>
 #include <utility>
@@ -34,11 +33,11 @@
 
 class Network {
 public:
+    static constexpr auto NUM_SYMMETRIES = 8;
+    static constexpr auto IDENTITY_SYMMETRY = 0;
     enum Ensemble {
-        DIRECT, RANDOM_SYMMETRY
+        DIRECT, RANDOM_SYMMETRY, AVERAGE
     };
-    using BoardPlane = std::bitset<BOARD_SQUARES>;
-    using NNPlanes = std::vector<BoardPlane>;
     using ScoreVertexPair = std::pair<float,int>;
 
     struct Netresult {
@@ -58,8 +57,7 @@ public:
                                       const Ensemble ensemble,
                                       const int symmetry = -1,
                                       const bool skip_cache = false);
-    // File format version
-    static constexpr auto FORMAT_VERSION = 1;
+
     static constexpr auto INPUT_MOVES = 8;
     static constexpr auto INPUT_CHANNELS = 2 * INPUT_MOVES + 2;
     static constexpr auto OUTPUTS_POLICY = 2;
@@ -75,7 +73,11 @@ public:
     static void show_heatmap(const FastState * const state,
                              const Netresult & netres, const bool topmoves);
 
-    static void gather_features(const GameState* const state, NNPlanes& planes);
+    static std::vector<net_t> gather_features(const GameState* const state,
+                                              const int symmetry);
+    static std::pair<int, int> get_symmetry(const std::pair<int, int>& vertex,
+                                            const int symmetry,
+                                            const int board_size = BOARD_SIZE);
 private:
     static std::pair<int, int> load_v1_network(std::istream& wtfile);
     static std::pair<int, int> load_network_file(const std::string& filename);
@@ -102,11 +104,12 @@ private:
     static void winograd_sgemm(const std::vector<float>& U,
                                const std::vector<float>& V,
                                std::vector<float>& M, const int C, const int K);
-    static int get_nn_idx_symmetry(const int vertex, int symmetry);
-    static void fill_input_plane_pair(
-      const FullBoard& board, BoardPlane& black, BoardPlane& white);
-    static Netresult get_scored_moves_internal(
-      const NNPlanes& planes, const int symmetry);
+    static void fill_input_plane_pair(const FullBoard& board,
+                                      std::vector<net_t>::iterator black,
+                                      std::vector<net_t>::iterator white,
+                                      const int symmetry);
+    static Netresult get_scored_moves_internal(const GameState* const state,
+                                               const int symmetry);
 #if defined(USE_BLAS)
     static void forward_cpu(const std::vector<float>& input,
                             std::vector<float>& output_pol,

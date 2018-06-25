@@ -46,15 +46,14 @@ static void license_blurb() {
         "This program comes with ABSOLUTELY NO WARRANTY.\n"
         "This is free software, and you are welcome to redistribute it\n"
         "under certain conditions; see the COPYING file for details.\n\n",
-        PROGRAM_VERSION
-    );
+        PROGRAM_VERSION);
 }
 
 static void parse_commandline(int argc, char *argv[]) {
     namespace po = boost::program_options;
     // Declare the supported options.
-    po::options_description v_desc("Allowed options");
-    v_desc.add_options()
+    po::options_description gen_desc("Generic options");
+    gen_desc.add_options()
         ("help,h", "Show commandline options.")
         ("gtp,g", "Enable GTP mode.")
         ("threads,t", po::value<int>()->default_value(cfg_num_threads),
@@ -64,46 +63,76 @@ static void parse_commandline(int argc, char *argv[]) {
                        "Requires --noponder.")
         ("visits,v", po::value<int>(),
                      "Weaken engine by limiting the number of visits.")
-        ("timemanage", po::value<std::string>()->default_value("auto"),
-                       "[auto|on|off|fast] Enable time management features.\n"
-                       "auto = off when using -m, otherwise on")
         ("lagbuffer,b", po::value<int>()->default_value(cfg_lagbuffer_cs),
                         "Safety margin for time usage in centiseconds.")
         ("resignpct,r", po::value<int>()->default_value(cfg_resignpct),
                         "Resign when winrate is less than x%.\n"
                         "-1 uses 10% but scales for handicap.")
-        ("randomcnt,m", po::value<int>()->default_value(cfg_random_cnt),
-                        "Play more randomly the first x moves.")
-        ("noise,n", "Enable policy network randomization.")
-        ("seed,s", po::value<std::uint64_t>(),
-                   "Random number generation seed.")
-        ("dumbpass,d", "Don't use heuristics for smarter passing.")
         ("weights,w", po::value<std::string>(), "File with network weights.")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
+        ("timemanage", po::value<std::string>()->default_value("auto"),
+                       "[auto|on|off|fast|no_pruning] Enable time management features.\n"
+                       "auto = no_pruning when using -n, otherwise on.\n"
+                       "on = Cut off search when the best move can't change"
+                       ", but use full time if moving faster doesn't save time.\n"
+                       "fast = Same as on but always plays faster.\n"
+                       "no_pruning = For self play training use.\n")
         ("noponder", "Disable thinking on opponent's time.")
         ("benchmark", "Test network and exit. Default args:\n-v3200 --noponder "
                       "-m0 -t1 -s1.")
+        ;
 #ifdef USE_OPENCL
+    po::options_description gpu_desc("GPU options");
+    gpu_desc.add_options()
         ("gpu",  po::value<std::vector<int> >(),
                 "ID of the OpenCL device(s) to use (disables autodetection).")
         ("full-tuner", "Try harder to find an optimal OpenCL tuning.")
         ("tune-only", "Tune OpenCL only and then exit.")
+        ;
 #endif
+    po::options_description selfplay_desc("Self-play options");
+    selfplay_desc.add_options()
+        ("noise,n", "Enable policy network randomization.")
+        ("seed,s", po::value<std::uint64_t>(),
+                   "Random number generation seed.")
+        ("dumbpass,d", "Don't use heuristics for smarter passing.")
+        ("randomcnt,m", po::value<int>()->default_value(cfg_random_cnt),
+                        "Play more randomly the first x moves.")
+        ("randomvisits",
+            po::value<int>()->default_value(cfg_random_min_visits),
+            "Don't play random moves if they have <= x visits.")
+        ("randomtemp",
+            po::value<float>()->default_value(cfg_random_temp),
+            "Temperature to use for random move selection.")
+        ;
 #ifdef USE_TUNER
+    po::options_description tuner_desc("Tuning options");
+    tuner_desc.add_options()
         ("puct", po::value<float>())
         ("softmax_temp", po::value<float>())
         ("fpu_reduction", po::value<float>())
-#endif
         ;
+#endif
     // These won't be shown, we use them to catch incorrect usage of the
     // command line.
     po::options_description h_desc("Hidden options");
     h_desc.add_options()
         ("arguments", po::value<std::vector<std::string>>());
+    po::options_description visible;
+    visible.add(gen_desc)
+#ifdef USE_OPENCL
+       .add(gpu_desc)
+#endif
+       .add(selfplay_desc)
+#ifdef USE_TUNER
+       .add(tuner_desc);
+#else
+        ;
+#endif
     // Parse both the above, we will check if any of the latter are present.
-    po::options_description all("All options");
-    all.add(v_desc).add(h_desc);
+    po::options_description all;
+    all.add(visible).add(h_desc);
     po::positional_options_description p_desc;
     p_desc.add("arguments", -1);
     po::variables_map vm;
@@ -114,7 +143,7 @@ static void parse_commandline(int argc, char *argv[]) {
     }  catch(const boost::program_options::error& e) {
         printf("ERROR: %s\n", e.what());
         license_blurb();
-        std::cout << v_desc << std::endl;
+        std::cout << visible << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -130,7 +159,7 @@ static void parse_commandline(int argc, char *argv[]) {
             ev = EXIT_FAILURE;
         }
         license_blurb();
-        std::cout << v_desc << std::endl;
+        std::cout << visible << std::endl;
         exit(ev);
     }
 
@@ -210,10 +239,20 @@ static void parse_commandline(int argc, char *argv[]) {
                    "Add --noponder if you want a weakened engine.\n");
             exit(EXIT_FAILURE);
         }
+
+        // 0 may be specified to mean "no limit"
+        if (cfg_max_playouts == 0) {
+            cfg_max_playouts = UCTSearch::UNLIMITED_PLAYOUTS;
+        }
     }
 
     if (vm.count("visits")) {
         cfg_max_visits = vm["visits"].as<int>();
+
+        // 0 may be specified to mean "no limit"
+        if (cfg_max_visits == 0) {
+            cfg_max_visits = UCTSearch::UNLIMITED_PLAYOUTS;
+        }
     }
 
     if (vm.count("resignpct")) {
@@ -222,6 +261,14 @@ static void parse_commandline(int argc, char *argv[]) {
 
     if (vm.count("randomcnt")) {
         cfg_random_cnt = vm["randomcnt"].as<int>();
+    }
+
+    if (vm.count("randomvisits")) {
+        cfg_random_min_visits = vm["randomvisits"].as<int>();
+    }
+
+    if (vm.count("randomtemp")) {
+        cfg_random_temp = vm["randomtemp"].as<float>();
     }
 
     if (vm.count("timemanage")) {
@@ -234,6 +281,8 @@ static void parse_commandline(int argc, char *argv[]) {
             cfg_timemanage = TimeManagement::OFF;
         } else if (tm == "fast") {
             cfg_timemanage = TimeManagement::FAST;
+        } else if (tm == "no_pruning") {
+            cfg_timemanage = TimeManagement::NO_PRUNING;
         } else {
             printf("Invalid timemanage value.\n");
             exit(EXIT_FAILURE);
@@ -241,7 +290,7 @@ static void parse_commandline(int argc, char *argv[]) {
     }
     if (cfg_timemanage == TimeManagement::AUTO) {
         cfg_timemanage =
-            cfg_random_cnt ? TimeManagement::OFF : TimeManagement::ON;
+            cfg_noise ? TimeManagement::NO_PRUNING : TimeManagement::ON;
     }
 
     if (vm.count("lagbuffer")) {
@@ -305,7 +354,9 @@ void init_global_objects() {
     // improves reproducibility across platforms.
     Random::get_Rng().seedrandom(cfg_rng_seed);
 
-    NNCache::get_NNCache().set_size_from_playouts(cfg_max_playouts);
+    // When visits are limited ensure cache size is still limited.
+    auto playouts = std::min(cfg_max_playouts, cfg_max_visits);
+    NNCache::get_NNCache().set_size_from_playouts(playouts);
 
     // Initialize network
     Network::initialize();
@@ -313,13 +364,15 @@ void init_global_objects() {
 
 void benchmark(GameState& game) {
     game.set_timecontrol(0, 1, 0, 0);  // Set infinite time.
-    game.play_textmove("b", "q16");
+    game.play_textmove("b", "r16");
+    game.play_textmove("w", "d4");
+    game.play_textmove("b", "c3");
     auto search = std::make_unique<UCTSearch>(game);
     game.set_to_move(FastBoard::WHITE);
     search->think(FastBoard::WHITE);
 }
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     auto input = std::string{};
 
     // Set up engine parameters
@@ -355,7 +408,7 @@ int main (int argc, char *argv[]) {
         return 0;
     }
 
-    for(;;) {
+    for (;;) {
         if (!cfg_gtp_mode) {
             maingame->display_state();
             std::cout << "Leela: ";
