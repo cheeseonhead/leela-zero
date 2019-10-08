@@ -862,11 +862,10 @@ void GTP::execute(GameState & game, const std::string& xinput) {
                 Network::show_heatmap(&game, vec, false);
             }
         } else if (symmetry == "average" || symmetry == "avg") {
-            vec = Network::get_scored_moves(
+            vec = s_network->get_output(
                 &game, Network::Ensemble::AVERAGE, Network::NUM_SYMMETRIES, true);
 		} else if (symmetry == "pure") {
-			// Needs fixing
-            vec = Network::get_scored_moves(
+            vec = s_network->get_output(
                     &game, Network::Ensemble::AVERAGE,
                     Network::NUM_SYMMETRIES, true);
             char winrate[10];

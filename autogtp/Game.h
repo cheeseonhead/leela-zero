@@ -98,6 +98,7 @@ private:
         WRONG_GTP,
         LAUNCH_FAILURE
     };
+    Engine m_engine;
     QString m_seed;
     QString m_winner;
     QString m_fileName;

@@ -42,7 +42,7 @@ Game::Game(const Engine& engine) :
     m_moveNum(0)
 {
 	// QTextStream(stdout) << "OPT:" << opt << "\n";
-	m_seed = extractSeedFromOpt(opt);
+	m_seed = extractSeedFromOpt(engine.m_options);
     // QTextStream(stdout) << "SEED:" << m_seed << "\n";
     // QTextStream(stdout).flush();
     m_fileName = QUuid::createUuid().toRfc4122().toHex();
