@@ -262,7 +262,7 @@ QString Management::getOptionsString(const QJsonObject &opt, const QString &rnd)
     options.append(getOption(opt, "visits", " -v ", ""));
     options.append(getOption(opt, "resignation_percent", " -r ", "1"));
     options.append(getOption(opt, "randomcnt", " -m ", "30"));
-    options.append(getOption(opt, "threads", " -t ", "1"));
+    options.append(getOption(opt, "threads", " -t ", "4"));
     options.append(getBoolOption(opt, "dumbpass", " -d ", true));
     options.append(getBoolOption(opt, "noise", " -n ", true));
     options.append(" --noponder ");
@@ -387,6 +387,7 @@ Order Management::getWorkInternal(bool tuning) {
     //parsing options
     if (ob.contains("options")) {
         parameters["optHash"] = ob.value("options_hash").toString();
+
         parameters["options"] = getOptionsString(ob.value("options").toObject(), rndSeed);
     }
 
