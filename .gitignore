@@ -8,6 +8,10 @@ training/tf/venv
 leelaz-model*
 *.orig
 leelaz_opencl_tuning
+/build-autogtp-*
+/build-validation-*
+.vs/
+build/
 .idea
 cmake-build-debug
 autogtp/games
