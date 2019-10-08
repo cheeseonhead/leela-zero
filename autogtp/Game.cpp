@@ -253,7 +253,7 @@ bool Game::readMove() {
     }
 
     // Get the winrate
-    write(qPrintable("heatmap average\n"));
+    write(qPrintable("heatmap pure\n"));
     waitForBytesWritten(-1);
     if (!waitReady()) {
         error(Game::PROCESS_DIED);
@@ -267,6 +267,7 @@ bool Game::readMove() {
     }
 
     QString winRate = readBuffer;
+
     winRate.remove(0, 2);
     winRate = winRate.simplified();
     if (!eatNewLine()) {

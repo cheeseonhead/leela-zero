@@ -576,8 +576,6 @@ bool GTP::execute(GameState & game, std::string xinput) {
         cmdstream >> tmp;   // eat heatmap
         cmdstream >> symmetry;
 
-        char winrate[10];
-
         Network::Netresult vec;
         if (cmdstream.fail()) {
             // Default = DIRECT with no symmetric change
@@ -591,18 +589,22 @@ bool GTP::execute(GameState & game, std::string xinput) {
             }
         } else if (symmetry == "average" || symmetry == "avg") {
             vec = Network::get_scored_moves(
-                &game, Network::Ensemble::AVERAGE, Network::NUM_SYMMETRIES, true);
+		&game, Network::Ensemble::AVERAGE, Network::NUM_SYMMETRIES, true);
+        } else if (symmetry == "pure") {
+            vec = Network::get_scored_moves(
+                    &game, Network::Ensemble::AVERAGE,
+                    Network::NUM_SYMMETRIES, true);
+            char winrate[10];
+            sprintf(winrate, "%f%%", vec.winrate * 100);
+
+            gtp_printf(id, winrate);
+            return;
         } else {
             vec = Network::get_scored_moves(
                 &game, Network::Ensemble::DIRECT, std::stoi(symmetry), true);
         }
 
-        auto vec = Network::get_scored_moves(
-            &game, Network::Ensemble::DIRECT, symmetry, true);
-
-        sprintf(winrate, "%f%%", vec.winrate * 100);
-        Network::show_heatmap(&game, vec, false);
-        if (symmetry != "all") {
+        if (symmetry != "all" && symmetry != "pure") {
             Network::show_heatmap(&game, vec, false);
         }
 

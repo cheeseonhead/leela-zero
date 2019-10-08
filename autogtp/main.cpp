@@ -39,6 +39,9 @@
 #include "Console.h"
 
 int main(int argc, char *argv[]) {
+    QTextStream(stdout) << "Hello" << endl;
+    QTextStream(stdout).flush();
+
     QCoreApplication app(argc, argv);
     app.setApplicationName("autogtp");
     app.setApplicationVersion(QString("v%1").arg(AUTOGTP_VERSION));
